@@ -8,6 +8,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 abstract class PageSpeed
 {
+    protected static $isEnabled;
+
     /**
      * Apply rules.
      *
@@ -56,8 +58,13 @@ abstract class PageSpeed
      */
     protected function isEnable()
     {
-        $enable = config('laravel-page-speed.enable');
-        return (is_null($enable))?true: (boolean) $enable;
+        if (! is_null(static::$isEnabled)) {
+            return static::$isEnabled;
+        }
+
+        static::$isEnabled = (bool) config('laravel-page-speed.enable', true);
+
+        return static::$isEnabled;
     }
 
     /**
@@ -69,9 +76,6 @@ abstract class PageSpeed
      */
     protected function shouldProcessPageSpeed($request, $response)
     {
-        $patterns = config('laravel-page-speed.skip');
-        $patterns = (is_null($patterns))?[]: $patterns;
-
         if (! $this->isEnable()) {
             return false;
         }
@@ -83,6 +87,8 @@ abstract class PageSpeed
         if ($response instanceof StreamedResponse) {
            return false;
         }
+
+        $patterns = config('laravel-page-speed.skip', []);
 
         foreach ($patterns as $pattern) {
             if ($request->is($pattern)) {
